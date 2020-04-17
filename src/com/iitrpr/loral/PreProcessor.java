@@ -1,5 +1,11 @@
 package com.iitrpr.loral;
 import java.util.*;
+
+
+import com.iitrpr.loral.DemandNode;
+import com.iitrpr.loral.DnToScToken;
+import com.iitrpr.loral.ServiceCenter;
+
 import java.io.*;
 
 public class PreProcessor {
@@ -24,7 +30,7 @@ public class PreProcessor {
     		i++;
     	}
     }
-    
+    //changed
 	public void loadDemandNode() throws IOException{
     	br = new BufferedReader(new FileReader(allNodesDetails));
     	String line="";
@@ -35,8 +41,8 @@ public class PreProcessor {
     			DemandNode dn = new DemandNode(lineSplit[0],null);
     			Loral.demandMap.put(lineSplit[0], dn);
     			demandNodeIndexMapping.put(i,dn);
-    			i++;
     		}
+    		i++;
     	}
     }
     
@@ -62,7 +68,7 @@ public class PreProcessor {
     		}
     	}
     }
-	
+	//changed
 	public void distanceMatrixToDemandNodes() throws IOException{
 		Loral.demandNodeProcessQueue = new PriorityQueue<DnToScToken>();
 		br = new BufferedReader(new FileReader(distanceMatrix));
@@ -70,9 +76,10 @@ public class PreProcessor {
     	int i=0;
     	System.out.println("DemandNodeIndexMapSize : " + demandNodeIndexMapping.size());
     	System.out.println("ServiceNodeIndexMapSize : " + serviceCenterIndexMapping.size());
-    	while((line=br.readLine()) != null && !line.equals("") &&(i<demandNodeIndexMapping.size())) {
+    	while((line=br.readLine()) != null && !line.equals("")) {
     		String[] lineSplit = line.split(",");
     		DemandNode demandNode = demandNodeIndexMapping.get(i);
+    		if(demandNode==null) {i++;continue;}
     		for(int j=0;j<Loral.serviceMap.size();j++) {
     			//System.out.println("i=" +i+" j="+j + " val=" + lineSplit[j]);
     			/*
