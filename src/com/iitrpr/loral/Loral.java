@@ -1,6 +1,7 @@
 package com.iitrpr.loral;
 import java.util.*;
 
+
 public class Loral {
 	static HashMap<String, DemandNode> demandMap;
 	static HashMap<String, ServiceCenter> serviceMap;
@@ -10,16 +11,18 @@ public class Loral {
 	static int threshold,bestK;
 	static int minCascadeCost;
 	int objectiveFunction = 0;
+	int checkIndex = 1311;
 	// This variable is only for testing.
 	// To store the cascade list which gives out the minimum cascade cost.
-	CascadeList finalCascadeList;
+	static CascadeList finalCascadeList;
 	/*
 	 *  This method performs the Loral Algorithm.
 	 * */
 	public void performLoral() {
+		//int tokenIndex=1;
 		//For loop for demand nodes being unassigned to the service center.
 		int noOfTokensExecuted = 0;
-		//while(tokenIndex<checkIndex+1) {
+		//while(tokenIndex++<checkIndex+1) {
 		while(!demandNodeProcessQueue.isEmpty()) {
 			// Token to get the service center and demand node with the minimum distance between them.
 			DnToScToken token = demandNodeProcessQueue.poll();
@@ -74,7 +77,7 @@ public class Loral {
 				//Initializing it to the base object function to campare it to all the cascading cost.
 				minCascadeCost = baseObjFn;
 				int k = 0;
-				while((!bestKBoundaryVertices.isEmpty()) && (k++ < Loral.bestK)) {
+				while((!bestKBoundaryVertices.isEmpty()) && (k++ < bestK)) {
 					BoundaryAndItsObjFn boundaryVertex = bestKBoundaryVertices.poll();
 					
 					// This hash set to take care that the service center is not repeated.
@@ -86,13 +89,8 @@ public class Loral {
 					
 					// List to store the path through which the cascading proceeds.
 					CascadeList currentCascadeDetail = new CascadeList();
-					int prevCascadeValue = cascadeObjFn;
-					// Cascading Cost Calculation
-					if(!visitedSC.contains(boundaryVertex.serviceCenter)) {
-						cascadeObjFn = cascadePath(prevCascadeValue, currentCascadeDetail, visitedSC, boundaryVertex.serviceCenter, boundaryVertex.demandNode);
-					}
-					else 
-						cascadeObjFn = Integer.MAX_VALUE;
+					
+					cascadePath(cascadeObjFn, currentCascadeDetail, visitedSC, boundaryVertex.serviceCenter, boundaryVertex.demandNode);
 				}
 				
 				// Check if the cascading needs to happen or not.
@@ -149,22 +147,12 @@ public class Loral {
 		cascadeList.insertAtEnd(new CascadePath(serviceCenter, demandNode, distance));
 		
 		if(!serviceCenter.isfull()) {
-			if(cascadePathCost<minCascadeCost) {
-				copyPathToFinalList(cascadeList);
-				minCascadeCost = cascadePathCost;
-				return minCascadeCost;
-			}else
-				return Integer.MAX_VALUE;
+			copyPathToFinalList(cascadePathCost,cascadeList);
+			return cascadePathCost;
 		} 
 		else if(visitedSC.size() >= threshold) {
-			if(cascadePathCost + serviceCenter.penalty<minCascadeCost) {
-				copyPathToFinalList(cascadeList);
-				minCascadeCost = cascadePathCost + serviceCenter.penalty;
-				System.out.println("Returned = " + minCascadeCost);
-				return minCascadeCost;
-			}else {
-				return Integer.MAX_VALUE;
-			}
+			copyPathToFinalList(cascadePathCost + serviceCenter.penalty,cascadeList);
+			return cascadePathCost + serviceCenter.penalty;
 		}
 		else {
 			// Adding the service center to the visited service center so that it is not further processed.
@@ -174,8 +162,8 @@ public class Loral {
 			int baseObjFn =  cascadePathCost + serviceCenter.penalty;
 			// This loop is to iterate over all the boundary vertices
 			BoundaryAndItsObjFn bestBoundaryVertex=null;
+			int bestKMin=Integer.MAX_VALUE;
 			for(DemandNode boundaryDemandNode : serviceCenter.boundaryVertices) {
-				int bestKMin=Integer.MAX_VALUE;
 				// This loop is to add the demand node and service center distance to the Tree Set.
 				for(Map.Entry<ServiceCenter, Integer> distanceDetail : boundaryDemandNode.distanceToSC.entrySet()) {
 					if((baseObjFn>distanceDetail.getValue()) && (!visitedSC.contains(distanceDetail.getKey())) && (demandNode.allocation!=distanceDetail.getKey())) {
@@ -198,26 +186,20 @@ public class Loral {
 				cascadeObjFn = cascadePath(cascadeObjFn, cascadeList, visitedSC, bestBoundaryVertex.serviceCenter, bestBoundaryVertex.demandNode);
 				// Maintaining the minimum cascading list.
 				if(cascadeObjFn<baseObjFn) {
-					if(cascadeObjFn< minCascadeCost) {
-						minCascadeCost = cascadeObjFn;
-						copyPathToFinalList(cascadeList);
-					}
-					return minCascadeCost;
+					copyPathToFinalList(cascadeObjFn,cascadeList);
+					cascadeList.removeFromIndex(visitedSC.size()-1);
+					visitedSC.remove(serviceCenter);
+					return cascadeObjFn;
 				}else {
-					if(baseObjFn < minCascadeCost) {
-						minCascadeCost = baseObjFn;
-						cascadeList.removeFromIndex(visitedSC.size()-1);
-						copyPathToFinalList(cascadeList);
-					}
+					cascadeList.removeFromIndex(visitedSC.size()-1);
+					copyPathToFinalList(baseObjFn,cascadeList);
+					visitedSC.remove(serviceCenter);
 					return baseObjFn;
-					// In my customized singly linked list the removal is done in constant time.
 				}
 			}else {
-				if(baseObjFn < minCascadeCost) {
-					minCascadeCost = baseObjFn;
-					cascadeList.removeFromIndex(visitedSC.size()-1);
-					copyPathToFinalList(cascadeList);
-				}
+				cascadeList.removeFromIndex(visitedSC.size()-1);
+				copyPathToFinalList(baseObjFn,cascadeList);
+				visitedSC.remove(serviceCenter);
 				return baseObjFn;
 			}
 		}
@@ -313,11 +295,14 @@ public class Loral {
 		}
 	}
 	
-	public void copyPathToFinalList(CascadeList list) {
-		finalCascadeList.size=0;
-		for(int i=0;i<list.size;i++) 
-			finalCascadeList.insertAtEnd(list.list[i]);
-		
+	public static void copyPathToFinalList(int cascadeObjFn, CascadeList list) {
+		//System.out.println("copyPathToFinalList initiated : cascadeObjFn = " + cascadeObjFn + " minCostAcrossAllThread = " + minCostAcrossAllThreads);
+		if(cascadeObjFn<minCascadeCost) {
+			minCascadeCost = cascadeObjFn;
+			finalCascadeList.size=0;
+			for(int i=0;i<list.size;i++) 
+				finalCascadeList.insertAtEnd(list.list[i]);
+		}
 	}
 	
 }
