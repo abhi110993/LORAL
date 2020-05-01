@@ -52,27 +52,15 @@ public class Loral {
 				int baseObjFn = token.distance + token.serviceCenter.penalty;
 				PriorityQueue<BoundaryAndItsObjFn> bestKBoundaryVertices = new PriorityQueue<BoundaryAndItsObjFn>();
 				//This hashmap is used to find the best demand node between the service centers
-				HashMap<ServiceCenter,DemandNode> findBestDNodeForSC = new HashMap<ServiceCenter, DemandNode>();
 				for(DemandNode dNode : token.serviceCenter.boundaryVertices) {
 					// This loop is to add the demand node and service center distance to the Tree Set.
 					for(Map.Entry<ServiceCenter, Integer> distanceDetail : dNode.distanceToSC.entrySet()) {
-						
 						// There's no point adding something whose distance is greater than the base objective function value
-						if(baseObjFn>distanceDetail.getValue() && (dNode.allocation!=distanceDetail.getKey())) {
-							DemandNode prevBestDNode = findBestDNodeForSC.get(distanceDetail.getKey());
-							if((prevBestDNode==null) || ((distanceDetail.getValue()-dNode.distanceToAllocatedSC)<(prevBestDNode.getDistanceToSC(distanceDetail.getKey())-prevBestDNode.distanceToAllocatedSC))) {
-								findBestDNodeForSC.put(distanceDetail.getKey(), dNode);
-								//if(tokenIndex==checkIndex+1)
-								//	System.out.println("Hash addition : "+ demandNode.dnid+ "-" +distanceDetail.getKey().scid+"="+(distanceDetail.getValue()-demandNode.distanceToAllocatedSC));
-							}
+						if(dNode.allocation!=distanceDetail.getKey()) {
+							bestKBoundaryVertices.add(new BoundaryAndItsObjFn(dNode.getDistanceToSC(distanceDetail.getKey())-dNode.distanceToAllocatedSC, dNode, distanceDetail.getKey()));
 						}
 					}
 				}
-				for(Map.Entry<ServiceCenter, DemandNode> entry : findBestDNodeForSC.entrySet()) {
-					bestKBoundaryVertices.add(new BoundaryAndItsObjFn(entry.getValue().getDistanceToSC(entry.getKey())-entry.getValue().distanceToAllocatedSC, entry.getValue(), entry.getKey()));
-				}
-				
-				findBestDNodeForSC.clear();
 				
 				//Initializing it to the base object function to campare it to all the cascading cost.
 				minCascadeCost = baseObjFn;
@@ -132,12 +120,12 @@ public class Loral {
 			}
 		}
 		
-		System.out.println("*************The total objective cost is : " + objectiveFunction + "*************");
+		//System.out.println("*************The total objective cost is : " + objectiveFunction + "*************");
 	}
 	
 	public int cascadePath(int cascadePathCost, CascadeList cascadeList,HashSet<ServiceCenter> visitedSC, ServiceCenter serviceCenter, DemandNode demandNode) {
 		// Cascading happens till the time the visited service center length becomes equal to the threshold.
-		if(cascadePathCost>minCascadeCost || threshold==0) {
+		if(threshold==0) {
 			return Integer.MAX_VALUE;
 		}
 		// Distance between demand node and service center.
@@ -167,7 +155,7 @@ public class Loral {
 				// This loop is to add the demand node and service center distance to the Tree Set.
 				for(Map.Entry<ServiceCenter, Integer> distanceDetail : boundaryDemandNode.distanceToSC.entrySet()) {
 					if((baseObjFn>distanceDetail.getValue()) && (!visitedSC.contains(distanceDetail.getKey())) && (demandNode.allocation!=distanceDetail.getKey())) {
-						int cost = distanceDetail.getValue()-boundaryDemandNode.distanceToAllocatedSC;
+						int cost = cascadePathCost + distanceDetail.getValue()-boundaryDemandNode.distanceToAllocatedSC;
 						if(distanceDetail.getKey().isfull())
 							cost += distanceDetail.getKey().penalty;
 						if(cost<bestKMin) {
