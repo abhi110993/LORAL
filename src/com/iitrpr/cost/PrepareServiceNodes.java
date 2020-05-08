@@ -12,14 +12,14 @@ public class PrepareServiceNodes {
 	static int noOfNodes=23839;
 	static int noOfSC;
 	static HashMap<String, Integer> nodesIndexMap;
-	static float ratioTotalCapacityToDemandNode = 0.7f;
+	static float ratioTotalCapacityToDemandNode = 0.9f;
 	static ArrayList<String> nodes;
 	static int[] capacities;
-	static int penaltyRange = 50;
+	static int penaltyRange = 500;
 	static Random random = new Random();
 	public static void main(String[] args) throws Exception{
 		//int[] ratioDemandToService = {400,500,700};
-		int ratioDemandToService = 400;
+		int ratioDemandToService = 300;
 		noOfSC = ((noOfNodes) / (ratioDemandToService + 1));
 		String path = "./Resource/ServiceCenter.txt";
 		int totalCap = Math.round((noOfNodes - noOfSC) * ratioTotalCapacityToDemandNode);

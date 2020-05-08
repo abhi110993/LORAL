@@ -28,7 +28,8 @@ public class Loral {
 			DnToScToken token = demandNodeProcessQueue.poll();
 			if(token==null || token.demandNode.isAllocated())
 				continue;
-			System.out.println("Demand node in execution = " + noOfTokensExecuted++);
+			// Remove this line if u run it for multiple ratios
+//********** System.out.println("Demand node in execution = " + noOfTokensExecuted++);
 			// If the service center has the capacity then allocate the demand node to the service center.
 			if(!token.serviceCenter.isfull()) {
 				// Since the capacity is >0, so the increase in objective function is only because of the distance. 

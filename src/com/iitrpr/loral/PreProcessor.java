@@ -1,19 +1,15 @@
 package com.iitrpr.loral;
 import java.util.*;
 
-
-import com.iitrpr.loral.DemandNode;
-import com.iitrpr.loral.DnToScToken;
-import com.iitrpr.loral.ServiceCenter;
-
 import java.io.*;
 
 public class PreProcessor {
     
-	private String serviceDetails = "./Resource/ServiceCenter.txt";
-	private String allNodesDetails = "./Resource/nodes.txt";
-	private String allEdgeDetails = "./Resource/edges.txt";
-	private String distanceMatrix = "./Resource/CostMatrix.txt";
+	static int ratio;
+	private String serviceDetails = "./dataset/"+ratio+"/ServiceCenter.txt";
+	private String allNodesDetails = "./dataset/"+ratio+"/nodes.txt";
+	private String allEdgeDetails = "./dataset/"+ratio+"/edges.txt";
+	private String distanceMatrix = "./dataset/"+ratio+"/CostMatrix.txt";
 	private BufferedReader br;
 	private HashMap<Integer, DemandNode> demandNodeIndexMapping = new HashMap<Integer, DemandNode>();
 	private HashMap<Integer, ServiceCenter> serviceCenterIndexMapping = new HashMap<Integer, ServiceCenter>();
@@ -44,6 +40,7 @@ public class PreProcessor {
     		}
     		i++;
     	}
+    	br.close();
     }
     
 	public void loadEdges() throws IOException{
@@ -67,10 +64,12 @@ public class PreProcessor {
     			Loral.incomingEdgeMap.get(lineSplit[1]).put(lineSplit[0],Integer.parseInt(lineSplit[2]));
     		}
     	}
+    	br.close();
     }
 	//changed
 	public void distanceMatrixToDemandNodes() throws IOException{
 		Loral.demandNodeProcessQueue = new PriorityQueue<DnToScToken>();
+		HashMap<DemandNode,DistToSCToken> map = new HashMap<DemandNode, DistToSCToken>();
 		br = new BufferedReader(new FileReader(distanceMatrix));
     	String line="";
     	int i=0;
@@ -81,19 +80,30 @@ public class PreProcessor {
     		DemandNode demandNode = demandNodeIndexMapping.get(i);
     		if(demandNode==null) {i++;continue;}
     		for(int j=0;j<Loral.serviceMap.size();j++) {
-    			//System.out.println("i=" +i+" j="+j + " val=" + lineSplit[j]);
-    			/*
-    			 * demandNodeIndexMapping and serviceCenterIndexMapping starts from 0. 
-    			 * That's why j-size of total number of demand nodes.
-    			 * For more understanding check loadServiceCenter function.
-    			 * */
+    			int cost = Integer.parseInt(lineSplit[j].trim());
     			if(!lineSplit[j].contains("Infinite")) {
     				ServiceCenter sc = serviceCenterIndexMapping.get(j);
-    				demandNode.addDistanceToSC(Integer.parseInt(lineSplit[j].trim()), sc);
-    				Loral.demandNodeProcessQueue.add(new DnToScToken(Integer.parseInt(lineSplit[j].trim()), sc, demandNode));
+    				demandNode.addDistanceToSC(cost, sc);
+    				if(map.get(demandNode)==null) {
+    					map.put(demandNode,new DistToSCToken(sc,cost));
+    				}else if(map.get(demandNode).distance>cost) {
+    					map.put(demandNode,new DistToSCToken(sc,cost));
+    				}
     			}
     		}
     		i++;
     	}
+    	br.close();
+    	for(Map.Entry<DemandNode, DistToSCToken> entry : map.entrySet())
+    		Loral.demandNodeProcessQueue.add(new DnToScToken(entry.getValue().distance, entry.getValue().sc, entry.getKey()));
+	}
+}
+
+class DistToSCToken{
+	int distance;
+	ServiceCenter sc;
+	public DistToSCToken(ServiceCenter s,int d) {
+		sc = s;
+		distance = d;
 	}
 }
